@@ -943,8 +943,8 @@ public class FastLeaderElection implements Election {
                 updateProposal(getInitId(), getInitLastLoggedZxid(), getPeerEpoch());
             }
 
-            LOG.info(
-                "New election. My id = {}, proposed zxid=0x{}",
+            LOG.info(New election. My id
+                " = {}, proposed zxid=0x{}",
                 self.getId(),
                 Long.toHexString(proposedZxid));
             sendNotifications();

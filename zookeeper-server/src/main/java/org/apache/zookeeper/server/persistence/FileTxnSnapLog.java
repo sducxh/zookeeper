@@ -123,7 +123,7 @@ public class FileTxnSnapLog {
         trustEmptySnapshot = Boolean.getBoolean(ZOOKEEPER_SNAPSHOT_TRUST_EMPTY);
         LOG.info("{} : {}", ZOOKEEPER_SNAPSHOT_TRUST_EMPTY, trustEmptySnapshot);
 
-        if (!this.dataDir.exists()) {
+        if (!this.dataDir.exists()) { // data目录不存在，自动创建or抛出异常
             if (!enableAutocreate) {
                 throw new DatadirException(String.format(
                     "Missing data directory %s, automatic data directory creation is disabled (%s is false)."
@@ -161,7 +161,7 @@ public class FileTxnSnapLog {
 
         // check content of transaction log and snapshot dirs if they are two different directories
         // See ZOOKEEPER-2967 for more details
-        if (!this.dataDir.getPath().equals(this.snapDir.getPath())) {
+        if (!this.dataDir.getPath().equals(this.snapDir.getPath())) { // 校验目录合法性：路径不同且文件命名合法
             checkLogDir();
             checkSnapDir();
         }
@@ -251,7 +251,7 @@ public class FileTxnSnapLog {
      */
     public long restore(DataTree dt, Map<Long, Integer> sessions, PlayBackListener listener) throws IOException {
         long snapLoadingStartTime = Time.currentElapsedTime();
-        long deserializeResult = snapLog.deserialize(dt, sessions);
+        long deserializeResult = snapLog.deserialize(dt, sessions); // 从快照加载
         ServerMetrics.getMetrics().STARTUP_SNAP_LOAD_TIME.add(Time.currentElapsedTime() - snapLoadingStartTime);
         FileTxnLog txnLog = new FileTxnLog(dataDir);
         boolean trustEmptyDB;

@@ -1129,7 +1129,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
         if (!getView().containsKey(myid)) {
             throw new RuntimeException("My id " + myid + " not in the peer list");
         }
-        loadDataBase();
+        loadDataBase(); // 加载数据
         startServerCnxnFactory();
         try {
             adminServer.start();
@@ -1210,8 +1210,8 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
     public synchronized void startLeaderElection() {
         try {
-            if (getPeerState() == ServerState.LOOKING) {
-                currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch());
+            if (getPeerState() == ServerState.LOOKING) { // 初始LOOKING状态
+                currentVote = new Vote(myid, getLastLoggedZxid(), getCurrentEpoch()); // 构造选票
             }
         } catch (IOException e) {
             RuntimeException re = new RuntimeException(e.getMessage());
@@ -1354,7 +1354,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
             throw new UnsupportedOperationException("Election Algorithm 1 is not supported.");
         case 2:
             throw new UnsupportedOperationException("Election Algorithm 2 is not supported.");
-        case 3:
+        case 3: // 只支持FastLeaderElection
             QuorumCnxManager qcm = createCnxnManager();
             QuorumCnxManager oldQcm = qcmRef.getAndSet(qcm);
             if (oldQcm != null) {
@@ -2587,7 +2587,7 @@ public class QuorumPeer extends ZooKeeperThread implements QuorumStats.Provider 
     }
 
     public QuorumCnxManager createCnxnManager() {
-        int timeout = quorumCnxnTimeoutMs > 0 ? quorumCnxnTimeoutMs : this.tickTime * this.syncLimit;
+        int timeout = quorumCnxnTimeoutMs > 0 ? quorumCnxnTimeoutMs : this.tickTime * this.syncLimit; // 环境配置5*2000
         LOG.info("Using {}ms as the quorum cnxn socket timeout", timeout);
         return new QuorumCnxManager(
             this,

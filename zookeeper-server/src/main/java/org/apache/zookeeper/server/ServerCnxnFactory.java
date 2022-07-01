@@ -159,7 +159,7 @@ public abstract class ServerCnxnFactory {
 
     public static ServerCnxnFactory createFactory() throws IOException {
         String serverCnxnFactoryName = System.getProperty(ZOOKEEPER_SERVER_CNXN_FACTORY);
-        if (serverCnxnFactoryName == null) {
+        if (serverCnxnFactoryName == null) { // 默认NIO，可配置为Netty（org.apache.zookeeper.server.NettyServerCnxnFactory）
             serverCnxnFactoryName = NIOServerCnxnFactory.class.getName();
         }
         try {

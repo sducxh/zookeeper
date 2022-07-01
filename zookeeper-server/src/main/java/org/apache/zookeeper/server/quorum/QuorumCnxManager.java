@@ -335,7 +335,7 @@ public class QuorumCnxManager {
         initializeConnectionExecutor(mySid, quorumCnxnThreadsSize);
 
         // Starts listener thread that waits for connection requests
-        listener = new Listener();
+        listener = new Listener(); // 选举监听
         listener.setName("QuorumPeerListener");
     }
 
