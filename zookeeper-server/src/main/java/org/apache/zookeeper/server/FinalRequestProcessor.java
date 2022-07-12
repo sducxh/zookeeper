@@ -289,7 +289,7 @@ public class FinalRequestProcessor implements RequestProcessor {
                         request.authInfo);
                 Stat stat = new Stat();
                 byte b[] = zks.getZKDatabase().getData(getDataRequest.getPath(), stat,
-                        getDataRequest.getWatch() ? cnxn : null);
+                        getDataRequest.getWatch() ? cnxn : null); // 重点：第三个参数watcher传入的是ServerCnxn（默认实现类NIOServerCnxn），在setData触发watch时会用到
                 rsp = new GetDataResponse(b, stat);
                 break;
             }

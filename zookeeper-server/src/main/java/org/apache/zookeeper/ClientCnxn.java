@@ -134,12 +134,12 @@ public class ClientCnxn {
     private final CopyOnWriteArraySet<AuthData> authInfo = new CopyOnWriteArraySet<AuthData>();
 
     /**
-     * These are the packets that have been sent and are waiting for a response.
+     * These are the packets that have been sent and are waiting for a response. 已发出待响应
      */
     private final LinkedList<Packet> pendingQueue = new LinkedList<Packet>();
 
     /**
-     * These are the packets that need to be sent.
+     * These are the packets that need to be sent. 待发出
      */
     private final LinkedList<Packet> outgoingQueue = new LinkedList<Packet>();
 
@@ -247,15 +247,15 @@ public class ClientCnxn {
      * This class allows us to pass the headers and the relevant records around.
      */
     static class Packet {
-        RequestHeader requestHeader;
+        RequestHeader requestHeader; // 请求头，只有创建session时无
 
-        ReplyHeader replyHeader;
+        ReplyHeader replyHeader; // 响应头，收到服务端响应后构建
 
-        Record request;
+        Record request; // 请求内容
 
-        Record response;
+        Record response; // 响应内容
 
-        ByteBuffer bb;
+        ByteBuffer bb; // 实际发送请求的数据
 
         /** Client's view of the path (may differ due to chroot) **/
         String clientPath;
@@ -264,7 +264,7 @@ public class ClientCnxn {
 
         boolean finished;
 
-        AsyncCallback cb;
+        AsyncCallback cb; // 异步回调函数
 
         Object ctx;
 
@@ -309,7 +309,7 @@ public class ClientCnxn {
                 }
                 baos.close();
                 this.bb = ByteBuffer.wrap(baos.toByteArray());
-                this.bb.putInt(this.bb.capacity() - 4);
+                this.bb.putInt(this.bb.capacity() - 4); // 重写入len
                 this.bb.rewind();
             } catch (IOException e) {
                 LOG.warn("Ignoring unexpected exception", e);
@@ -398,7 +398,7 @@ public class ClientCnxn {
         readTimeout = sessionTimeout * 2 / 3;
         readOnly = canBeReadOnly;
 
-        sendThread = new SendThread(clientCnxnSocket);
+        sendThread = new SendThread(clientCnxnSocket); // state: NOT_CONNECTED->CONNECTING
         eventThread = new EventThread();
 
     }
@@ -502,7 +502,7 @@ public class ClientCnxn {
               isRunning = true;
               while (true) {
                  Object event = waitingEvents.take();
-                 if (event == eventOfDeath) {
+                 if (event == eventOfDeath) { // “死亡事件”用于终止EventThread；session过期时SendThread会利用它
                     wasKilled = true;
                  } else {
                     processEvent(event);
@@ -511,7 +511,7 @@ public class ClientCnxn {
                     synchronized (waitingEvents) {
                        if (waitingEvents.isEmpty()) {
                           isRunning = false;
-                          break;
+                          break; // 处理完所有事件
                        }
                     }
               }
@@ -525,7 +525,7 @@ public class ClientCnxn {
 
        private void processEvent(Object event) {
           try {
-              if (event instanceof WatcherSetEventPair) {
+              if (event instanceof WatcherSetEventPair) { // 注册的watch事件
                   // each watcher will process the event
                   WatcherSetEventPair pair = (WatcherSetEventPair) event;
                   for (Watcher watcher : pair.watchers) {
@@ -535,7 +535,7 @@ public class ClientCnxn {
                           LOG.error("Error while calling watcher ", t);
                       }
                   }
-              } else {
+              } else { // 异步回调
                   Packet p = (Packet) event;
                   int rc = 0;
                   String clientPath = p.clientPath;
@@ -945,9 +945,9 @@ public class ClientCnxn {
                             id.data), null, null));
                 }
                 outgoingQueue.addFirst(new Packet(null, null, conReq,
-                            null, null, readOnly));
+                            null, null, readOnly)); // 与server关联session，只是放入队列，后面会执行transport
             }
-            clientCnxnSocket.enableReadWriteOnly();
+            clientCnxnSocket.enableReadWriteOnly(); // 注册OP_READ OP_WRITE事件
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Session establishment request sent on "
                         + clientCnxnSocket.getRemoteSocketAddress());
@@ -1012,7 +1012,7 @@ public class ClientCnxn {
                     saslLoginFailed = true;
                 }
             }
-            logStartConnect(addr);
+            logStartConnect(addr); // 只是print开始连接日志
 
             clientCnxnSocket.connect(addr);
         }
@@ -1029,7 +1029,7 @@ public class ClientCnxn {
             ", closing socket connection and attempting reconnect";
         
         @Override
-        public void run() {
+        public void run() { // 自旋检测连接状态、检测超时、发送ping、收发数据
             clientCnxnSocket.introduce(this,sessionId);
             clientCnxnSocket.updateNow();
             clientCnxnSocket.updateLastSendAndHeard();
@@ -1037,9 +1037,9 @@ public class ClientCnxn {
             long lastPingRwServer = Time.currentElapsedTime();
             final int MAX_SEND_PING_INTERVAL = 10000; //10 seconds
             InetSocketAddress serverAddress = null;
-            while (state.isAlive()) {
+            while (state.isAlive()) { // not (CLOSED or AUTH_FAILED)
                 try {
-                    if (!clientCnxnSocket.isConnected()) {
+                    if (!clientCnxnSocket.isConnected()) { // 是否与server建立了连接
                         if(!isFirstConnect){
                             try {
                                 Thread.sleep(r.nextInt(1000));
@@ -1048,7 +1048,7 @@ public class ClientCnxn {
                             }
                         }
                         // don't re-establish connection if we are closing
-                        if (closing || !state.isAlive()) {
+                        if (closing || !state.isAlive()) { // 如果close或认证失败 不再建立连接
                             break;
                         }
                         if (rwServerAddress != null) {
@@ -1057,8 +1057,8 @@ public class ClientCnxn {
                         } else {
                             serverAddress = hostProvider.next(1000);
                         }
-                        startConnect(serverAddress);
-                        clientCnxnSocket.updateLastSendAndHeard();
+                        startConnect(serverAddress); // 创建TCP连接，关联session
+                        clientCnxnSocket.updateLastSendAndHeard(); // 连接成功更新send和heard时间
                     }
 
                     if (state.isConnected()) {
@@ -1093,8 +1093,8 @@ public class ClientCnxn {
                                       authState,null));
                             }
                         }
-                        to = readTimeout - clientCnxnSocket.getIdleRecv();
-                    } else {
+                        to = readTimeout - clientCnxnSocket.getIdleRecv(); // 已建立连接，检测是否read timeout
+                    } else { // 未与server连接，检测是否连接超时
                         to = connectTimeout - clientCnxnSocket.getIdleRecv();
                     }
                     
@@ -1147,7 +1147,7 @@ public class ClientCnxn {
                                     + Long.toHexString(getSessionId())
                                     + " : " + e.getMessage());
                         }
-                        break;
+                        break; // ONLY here break SendThread work
                     } else {
                         // this is ugly, you have a better way speak up
                         if (e instanceof SessionExpiredException) {
@@ -1260,7 +1260,7 @@ public class ClientCnxn {
 
         /**
          * Callback invoked by the ClientCnxnSocket once a connection has been
-         * established.
+         * established. 建立连接后调用：记录sessionid、session时间、state，创建*Connected事件
          * 
          * @param _negotiatedSessionTimeout
          * @param _sessionId
@@ -1271,13 +1271,13 @@ public class ClientCnxn {
         void onConnected(int _negotiatedSessionTimeout, long _sessionId,
                 byte[] _sessionPasswd, boolean isRO) throws IOException {
             negotiatedSessionTimeout = _negotiatedSessionTimeout;
-            if (negotiatedSessionTimeout <= 0) {
+            if (negotiatedSessionTimeout <= 0) { // 如果server检测session已过期，timeout置为0
                 state = States.CLOSED;
 
                 eventThread.queueEvent(new WatchedEvent(
                         Watcher.Event.EventType.None,
                         Watcher.Event.KeeperState.Expired, null));
-                eventThread.queueEventOfDeath();
+                eventThread.queueEventOfDeath(); // expired and death
 
                 String warnInfo;
                 warnInfo = "Unable to reconnect to ZooKeeper service, session 0x"

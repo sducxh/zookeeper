@@ -41,7 +41,7 @@ public final class ConnectStringParser {
     private final ArrayList<InetSocketAddress> serverAddresses = new ArrayList<InetSocketAddress>();
 
     /**
-     * 
+     * connectString示例：192.168.230.100:2181,192.168.230.101:2181,192.168.230.102:2181/sourceReading
      * @throws IllegalArgumentException
      *             for an invalid chroot path.
      */
@@ -55,7 +55,7 @@ public final class ConnectStringParser {
                 this.chrootPath = null;
             } else {
                 PathUtils.validatePath(chrootPath);
-                this.chrootPath = chrootPath;
+                this.chrootPath = chrootPath; // sourceReading
             }
             connectString = connectString.substring(0, off);
         } else {

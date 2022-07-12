@@ -50,7 +50,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
 
     @Override
     boolean isConnected() {
-        return sockKey != null;
+        return sockKey != null; // sockKey==null TCP连接断开或session过期
     }
     
     /**
@@ -275,7 +275,7 @@ public class ClientCnxnSocketNIO extends ClientCnxnSocket {
     throws IOException {
         sockKey = sock.register(selector, SelectionKey.OP_CONNECT);
         boolean immediateConnect = sock.connect(addr);
-        if (immediateConnect) {
+        if (immediateConnect) { // true：连接已建立
             sendThread.primeConnection();
         }
     }

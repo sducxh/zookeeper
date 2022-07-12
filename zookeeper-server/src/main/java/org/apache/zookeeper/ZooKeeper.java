@@ -450,7 +450,7 @@ public class ZooKeeper {
                 connectStringParser.getServerAddresses());
         cnxn = createConnection(connectStringParser.getChrootPath(),
                 hostProvider, sessionTimeout, this, watchManager,
-                getClientCnxnSocket(), canBeReadOnly);
+                getClientCnxnSocket()/*default：ClientCnxnSocketNIO*/, canBeReadOnly);
         cnxn.start();
     }
 
@@ -1533,15 +1533,15 @@ public class ZooKeeper {
         // the watch contains the un-chroot path
         WatchRegistration wcb = null;
         if (watcher != null) {
-            wcb = new ChildWatchRegistration(watcher, clientPath);
+            wcb = new ChildWatchRegistration(watcher, clientPath); // 构造出watchRegistration
         }
 
         final String serverPath = prependChroot(clientPath);
 
         RequestHeader h = new RequestHeader();
-        h.setType(ZooDefs.OpCode.getChildren);
+        h.setType(ZooDefs.OpCode.getChildren); // OpCode
         GetChildrenRequest request = new GetChildrenRequest();
-        request.setPath(serverPath);
+        request.setPath(serverPath); // path with chroot
         request.setWatch(watcher != null);
         GetChildrenResponse response = new GetChildrenResponse();
         ReplyHeader r = cnxn.submitRequest(h, request, response, wcb);
@@ -1849,12 +1849,12 @@ public class ZooKeeper {
     private static ClientCnxnSocket getClientCnxnSocket() throws IOException {
         String clientCnxnSocketName = System
                 .getProperty(ZOOKEEPER_CLIENT_CNXN_SOCKET);
-        if (clientCnxnSocketName == null) {
+        if (clientCnxnSocketName == null) { // 默认ClientCnxnSocketNIO
             clientCnxnSocketName = ClientCnxnSocketNIO.class.getName();
         }
         try {
             return (ClientCnxnSocket) Class.forName(clientCnxnSocketName).getDeclaredConstructor()
-                    .newInstance();
+                    .newInstance(); // 实例化
         } catch (Exception e) {
             IOException ioe = new IOException("Couldn't instantiate "
                     + clientCnxnSocketName);
